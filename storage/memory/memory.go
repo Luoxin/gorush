@@ -10,6 +10,7 @@ type statApp struct {
 	Ios        IosStatus     `json:"ios"`
 	Android    AndroidStatus `json:"android"`
 	Huawei     HuaweiStatus  `json:"huawei"`
+	Mi         MiStatus      `json:"mi"`
 }
 
 // AndroidStatus is android structure
@@ -26,6 +27,12 @@ type IosStatus struct {
 
 // HuaweiStatus is android structure
 type HuaweiStatus struct {
+	PushSuccess int64 `json:"push_success"`
+	PushError   int64 `json:"push_error"`
+}
+
+// HuaweiStatus is android structure
+type MiStatus struct {
 	PushSuccess int64 `json:"push_success"`
 	PushError   int64 `json:"push_error"`
 }
@@ -61,6 +68,8 @@ func (s *Storage) Reset() {
 	atomic.StoreInt64(&s.stat.Android.PushError, 0)
 	atomic.StoreInt64(&s.stat.Huawei.PushSuccess, 0)
 	atomic.StoreInt64(&s.stat.Huawei.PushError, 0)
+	atomic.StoreInt64(&s.stat.Mi.PushSuccess, 0)
+	atomic.StoreInt64(&s.stat.Mi.PushError, 0)
 }
 
 // AddTotalCount record push notification count.
@@ -143,6 +152,20 @@ func (s *Storage) GetHuaweiSuccess() int64 {
 // GetHuaweiError show error counts of Huawei notification.
 func (s *Storage) GetHuaweiError() int64 {
 	count := atomic.LoadInt64(&s.stat.Huawei.PushError)
+
+	return count
+}
+
+// GetMiSuccess show success counts of Huawei notification.
+func (s *Storage) GetMiSuccess() int64 {
+	count := atomic.LoadInt64(&s.stat.Mi.PushSuccess)
+
+	return count
+}
+
+// GetMiError show error counts of Huawei notification.
+func (s *Storage) GetMiError() int64 {
+	count := atomic.LoadInt64(&s.stat.Mi.PushError)
 
 	return count
 }

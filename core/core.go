@@ -7,6 +7,8 @@ const (
 	PlatFormAndroid
 	// PlatFormHuawei constant is 3 for Huawei
 	PlatFormHuawei
+	// PlatFormMiPush constant is 4 for MiPush
+	PlatFormMiPush
 )
 
 const (

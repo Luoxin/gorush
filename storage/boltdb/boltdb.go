@@ -47,6 +47,8 @@ func (s *Storage) Reset() {
 	s.setBoltDB(storage.AndroidErrorKey, 0)
 	s.setBoltDB(storage.HuaweiSuccessKey, 0)
 	s.setBoltDB(storage.HuaweiErrorKey, 0)
+	s.setBoltDB(storage.MiSuccessKey, 0)
+	s.setBoltDB(storage.MiErrorKey, 0)
 }
 
 func (s *Storage) setBoltDB(key string, count int64) {
@@ -157,6 +159,22 @@ func (s *Storage) GetHuaweiSuccess() int64 {
 func (s *Storage) GetHuaweiError() int64 {
 	var count int64
 	s.getBoltDB(storage.HuaweiErrorKey, &count)
+
+	return count
+}
+
+// GetMiiSuccess show success counts of Huawei notification.
+func (s *Storage) GetMiSuccess() int64 {
+	var count int64
+	s.getBoltDB(storage.MiSuccessKey, &count)
+
+	return count
+}
+
+// GetMiError show error counts of Huawei notification.
+func (s *Storage) GetMiError() int64 {
+	var count int64
+	s.getBoltDB(storage.MiErrorKey, &count)
 
 	return count
 }

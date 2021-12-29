@@ -76,6 +76,10 @@ func main() {
 	flag.StringVar(&opts.Huawei.AppSecret, "hmskey", "", "Huawei api key configuration for gorush")
 	flag.StringVar(&opts.Huawei.AppID, "hid", "", "HMS app id configuration for gorush")
 	flag.StringVar(&opts.Huawei.AppID, "hmsid", "", "HMS app id configuration for gorush")
+	flag.StringVar(&opts.Mi.AppID, "miid", "", "Mi app id configuration for gorush")
+	flag.StringVar(&opts.Mi.AppSecret, "misecret", "", "Mi app secret configuration for gorush")
+	flag.StringVar(&opts.Mi.Package, "mipackage", "", "Mi package name configuration for gorush")
+	flag.StringVar(&opts.Mi.Package, "mip", "", "Mi package name configuration for gorush")
 	flag.StringVar(&opts.Core.Address, "A", "", "address to bind")
 	flag.StringVar(&opts.Core.Address, "address", "", "address to bind")
 	flag.StringVar(&opts.Core.Port, "p", "", "port number for gorush")
@@ -146,6 +150,22 @@ func main() {
 		cfg.Huawei.AppID = opts.Huawei.AppID
 	}
 
+	if opts.Mi.AppID != "" {
+		cfg.Mi.AppID = opts.Mi.AppID
+	}
+
+	if opts.Mi.AppKey != "" {
+		cfg.Mi.AppKey = opts.Mi.AppKey
+	}
+
+	if opts.Mi.AppSecret != "" {
+		cfg.Mi.AppSecret = opts.Mi.AppSecret
+	}
+
+	if opts.Mi.Package != "" {
+		cfg.Mi.Package = opts.Mi.Package
+	}
+
 	if opts.Stat.Engine != "" {
 		cfg.Stat.Engine = opts.Stat.Engine
 	}
@@ -162,12 +182,7 @@ func main() {
 		cfg.Core.Address = opts.Core.Address
 	}
 
-	if err = logx.InitLog(
-		cfg.Log.AccessLevel,
-		cfg.Log.AccessLog,
-		cfg.Log.ErrorLevel,
-		cfg.Log.ErrorLog,
-	); err != nil {
+	if err = logx.InitLog(cfg.Log.AccessLevel, cfg.Log.AccessLog, cfg.Log.ErrorLevel, cfg.Log.ErrorLog); err != nil {
 		log.Fatalf("can't load log module, error: %v", err)
 	}
 
@@ -260,6 +275,41 @@ func main() {
 		return
 	}
 
+	// send huawei notification
+	if opts.Mi.Enabled {
+		cfg.Mi.Enabled = opts.Mi.Enabled
+		req := &notify.PushNotification{
+			Platform: core.PlatFormMiPush,
+			Message:  message,
+			Title:    title,
+		}
+
+		// send message to single device
+		if token != "" {
+			req.Tokens = []string{token}
+		}
+
+		// send topic message
+		if topic != "" {
+			req.To = topic
+		}
+
+		err := notify.CheckMessage(req)
+		if err != nil {
+			logx.LogError.Fatal(err)
+		}
+
+		if err := status.InitAppStatus(cfg); err != nil {
+			return
+		}
+
+		if _, err := notify.PushToMiPush(req, cfg); err != nil {
+			return
+		}
+
+		return
+	}
+
 	// send ios notification
 	if opts.Ios.Enabled {
 		if opts.Ios.Production {
@@ -324,37 +374,16 @@ func main() {
 	var w queue.Worker
 	switch core.Queue(cfg.Queue.Engine) {
 	case core.LocalQueue:
-		w = queue.NewConsumer(
-			queue.WithQueueSize(int(cfg.Core.QueueNum)),
-			queue.WithFn(notify.Run(cfg)),
-			queue.WithLogger(logx.QueueLogger()),
-		)
+		w = queue.NewConsumer(queue.WithQueueSize(int(cfg.Core.QueueNum)), queue.WithFn(notify.Run(cfg)), queue.WithLogger(logx.QueueLogger()))
 	case core.NSQ:
-		w = nsq.NewWorker(
-			nsq.WithAddr(cfg.Queue.NSQ.Addr),
-			nsq.WithTopic(cfg.Queue.NSQ.Topic),
-			nsq.WithChannel(cfg.Queue.NSQ.Channel),
-			nsq.WithMaxInFlight(int(cfg.Core.WorkerNum)),
-			nsq.WithRunFunc(notify.Run(cfg)),
-			nsq.WithLogger(logx.QueueLogger()),
-		)
+		w = nsq.NewWorker(nsq.WithAddr(cfg.Queue.NSQ.Addr), nsq.WithTopic(cfg.Queue.NSQ.Topic), nsq.WithChannel(cfg.Queue.NSQ.Channel), nsq.WithMaxInFlight(int(cfg.Core.WorkerNum)), nsq.WithRunFunc(notify.Run(cfg)), nsq.WithLogger(logx.QueueLogger()))
 	case core.NATS:
-		w = nats.NewWorker(
-			nats.WithAddr(cfg.Queue.NATS.Addr),
-			nats.WithSubj(cfg.Queue.NATS.Subj),
-			nats.WithQueue(cfg.Queue.NATS.Queue),
-			nats.WithRunFunc(notify.Run(cfg)),
-			nats.WithLogger(logx.QueueLogger()),
-		)
+		w = nats.NewWorker(nats.WithAddr(cfg.Queue.NATS.Addr), nats.WithSubj(cfg.Queue.NATS.Subj), nats.WithQueue(cfg.Queue.NATS.Queue), nats.WithRunFunc(notify.Run(cfg)), nats.WithLogger(logx.QueueLogger()))
 	default:
 		logx.LogError.Fatalf("we don't support queue engine: %s", cfg.Queue.Engine)
 	}
 
-	q := queue.NewPool(
-		int(cfg.Core.WorkerNum),
-		queue.WithWorker(w),
-		queue.WithLogger(logx.QueueLogger()),
-	)
+	q := queue.NewPool(int(cfg.Core.WorkerNum), queue.WithWorker(w), queue.WithLogger(logx.QueueLogger()))
 
 	finished := make(chan struct{})
 	ctx := withContextFunc(context.Background(), func() {
@@ -385,6 +414,10 @@ func main() {
 		if _, err = notify.InitHMSClient(cfg, cfg.Huawei.AppSecret, cfg.Huawei.AppID); err != nil {
 			logx.LogError.Fatal(err)
 		}
+	}
+
+	if cfg.Mi.Enabled {
+		notify.InitMiPushClient(cfg, cfg.Mi.AppSecret, cfg.Mi.Package)
 	}
 
 	var g errgroup.Group

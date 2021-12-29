@@ -79,6 +79,8 @@ func (s *Storage) Reset() {
 	s.client.Set(s.ctx, storage.AndroidErrorKey, int64(0), 0)
 	s.client.Set(s.ctx, storage.HuaweiSuccessKey, int64(0), 0)
 	s.client.Set(s.ctx, storage.HuaweiErrorKey, int64(0), 0)
+	s.client.Set(s.ctx, storage.MiSuccessKey, int64(0), 0)
+	s.client.Set(s.ctx, storage.MiErrorKey, int64(0), 0)
 }
 
 // AddTotalCount record push notification count.
@@ -168,6 +170,22 @@ func (s *Storage) GetHuaweiSuccess() int64 {
 func (s *Storage) GetHuaweiError() int64 {
 	var count int64
 	s.getInt64(storage.HuaweiErrorKey, &count)
+
+	return count
+}
+
+// GetMiSuccess show success counts of Huawei notification.
+func (s *Storage) GetMiSuccess() int64 {
+	var count int64
+	s.getInt64(storage.MiSuccessKey, &count)
+
+	return count
+}
+
+// GetMiError show error counts of Huawei notification.
+func (s *Storage) GetMiError() int64 {
+	var count int64
+	s.getInt64(storage.MiErrorKey, &count)
 
 	return count
 }

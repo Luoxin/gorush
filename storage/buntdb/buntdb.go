@@ -49,6 +49,8 @@ func (s *Storage) Reset() {
 	s.setBuntDB(storage.AndroidErrorKey, 0)
 	s.setBuntDB(storage.HuaweiSuccessKey, 0)
 	s.setBuntDB(storage.HuaweiErrorKey, 0)
+	s.setBuntDB(storage.MiSuccessKey, 0)
+	s.setBuntDB(storage.MiErrorKey, 0)
 }
 
 func (s *Storage) setBuntDB(key string, count int64) {
@@ -168,6 +170,22 @@ func (s *Storage) GetHuaweiSuccess() int64 {
 func (s *Storage) GetHuaweiError() int64 {
 	var count int64
 	s.getBuntDB(storage.HuaweiErrorKey, &count)
+
+	return count
+}
+
+// GetMiiSuccess show success counts of Huawei notification.
+func (s *Storage) GetMiSuccess() int64 {
+	var count int64
+	s.getBuntDB(storage.MiSuccessKey, &count)
+
+	return count
+}
+
+// GetMiError show error counts of Huawei notification.
+func (s *Storage) GetMiError() int64 {
+	var count int64
+	s.getBuntDB(storage.MiErrorKey, &count)
 
 	return count
 }
